@@ -22,7 +22,7 @@ funcP <- function(pb, pc, po, p, beta, pCritical) {
         } else {
             output = 1
         }
-    # else 
+    # else
     } else {
         # This study using critical daylength (photoperiod)
         if (pCritical < p) {
@@ -53,7 +53,7 @@ calcDVS <- function(fixedParams, alpha, beta, g, sowingDate, headingDate, climat
     dvs2 = 0.345 + 0.005 * g
     # alpha is a parameter of temperature sensitivity to be estimated
     # beta is a parameter of photoperiod sensitivity to be estimated
-    # g is a parameter of the earliness of flowering to be estimated 
+    # g is a parameter of the earliness of flowering to be estimated
     # (scaled by the number of days from seedling emergence to flowering)
     #  under optimal photoperiod and temperature.
 
@@ -64,16 +64,16 @@ calcDVS <- function(fixedParams, alpha, beta, g, sowingDate, headingDate, climat
 
 
     ###########################
-    # At sowing date, observed DVS set as 0 and DVR is defined as f(t)/ g 
+    # At sowing date, observed DVS set as 0 and DVR is defined as f(t)/ g
     ###########################
     # temprature at sowing data
     t = climateDf[sowingDateRowIndex,"Temp"]
     DVSsowing = DVR = funcT(tb, tc, to, t, alpha) / g
     errorSowing = 0 - DVSsowing
-    
+
     ###########################
-    # At heading date DVS = 1 
-    ########################### 
+    # At heading date DVS = 1
+    ###########################
     DVSheading = 0
     for (i in sowingDateRowIndex:headingDateRowIndex) {
         date = climateDf[i,"Date"]
@@ -90,7 +90,7 @@ calcDVS <- function(fixedParams, alpha, beta, g, sowingDate, headingDate, climat
         # for debug
          #print(paste0("Date: ", date, " Temp: ", t, " DayLength: ", p, " DVR :", DVR, " DVSheading : ", DVSheading ))
     }
-    
+
     errorHeading = 1 - DVSheading
     return(c(errorSowing, errorHeading))
 }
@@ -160,7 +160,7 @@ predictHeadingDate <- function(fixedParams, alpha, beta, g, sowingDate, climateD
     sowingDateRowIndex <- which(climateDf$Date == sowingDate)
     lastIndex <- length(climateDf$Date)
 
-    # 
+    #
     DVSheading = 0
     for (i in sowingDateRowIndex:lastIndex) {
         date = climateDf[i,"Date"]
@@ -203,9 +203,9 @@ runPredictHeadingDate= function(estParam, headingDf2, fixedParams, accessionAnal
 
     observedHeadingDates = as.Date(headingDf3[,"Heading"])
     sowingDates = as.Date(headingDf3[,"Sowing"])
-    diffObs = as.integer(sowingDates - observedHeadingDates ) * (-1) 
+    diffObs = as.integer(sowingDates - observedHeadingDates ) * (-1)
     predictedHeadingDates = as.Date(headingDf3[,"PredictedHeadingDate"])
-    diffPred = as.integer(sowingDates - predictedHeadingDates ) * (-1) 
+    diffPred = as.integer(sowingDates - predictedHeadingDates ) * (-1)
     headingDf4 = cbind(headingDf3,diffObs, diffPred)
 
     if (showDetail == T) {
@@ -216,7 +216,7 @@ runPredictHeadingDate= function(estParam, headingDf2, fixedParams, accessionAnal
 }
 
 estDVIparam = function(climateDf,headingDf, accessions, criticalDaylength, sowingDateGroups, fixedParams, maxiter) {
-    
+
     for (accessionAnalyzed in accessions) {
 
         # Fixed parameters
@@ -247,10 +247,10 @@ estDVIparam = function(climateDf,headingDf, accessions, criticalDaylength, sowin
                 condition <- headingDf2$Sowing %in% sowingDateForAnalysis
                 headingDf2 <- headingDf2[condition, ]
             }
-            
-            
+
+
             RmseLossFunc = makeRmseLossFunc(alpha, beta, g, fixedParams=fixedParams, headingDf=headingDf2, climateDf=climateDf)
-    
+
             ga_result <- ga(type = "real-valued", fitness = function(x) -RmseLossFunc(x[1], x[2], x[3]), lower = c(0,0,30), upper = c(40, 40, 150), maxiter=maxiter, popSize=50, monitor=F, parallel=T)
 
             # Result summary
@@ -259,7 +259,7 @@ estDVIparam = function(climateDf,headingDf, accessions, criticalDaylength, sowin
             estParam = getGAEstimate(ga_result)
             cat(getGAEstimate(ga_result))
             cat("\n")
-            
+
             runPredictHeadingDate(estParam=estParam, headingDf2=headingDf2, fixedParams=fixedParams, accessionAnalyzed=accessionAnalyzed,climateDf=climateDf, showDetail = F )
         }
     }
@@ -274,6 +274,8 @@ estDVIparam = function(climateDf,headingDf, accessions, criticalDaylength, sowin
 # Load data
 myClimateFile = "C:/Users/yamagata/OneDrive - Kyushu University/Research/publication/論文作成中/continuousTransplanting/climateData.txt"
 myHeadingFile = "C:/Users/yamagata/OneDrive - Kyushu University/Research/publication/論文作成中/continuousTransplanting/DVICalc.txt"
+myClimateFile = "~/hdd6/satreps/dvi_model_R/climateData.txt"
+myHeadingFile = "~/hdd6/satreps/dvi_model_R/DVICalc.txt"
 myClimateDf = read.table(myClimateFile, head=T)
 myHeadingDf = read.table(myHeadingFile, head=T)
 
@@ -288,7 +290,7 @@ myFixedParams <- list(
 
 
 mySowingDateGroups = list(
-    c("2019-02-01","2019-03-01","2019-04-01", "2019-05-01"), 
+    c("2019-02-01","2019-03-01","2019-04-01", "2019-05-01"),
     c("2019-03-01","2019-04-01","2019-05-01", "2019-06-01"),
     c("2019-04-01","2019-05-01","2019-06-01", "2019-07-01"),
     c("2019-05-01","2019-06-01","2019-07-01", "2019-08-01"),
@@ -311,12 +313,12 @@ myCriticalDaylength <- list(PSH=11.86667, NKG=11.90000, IMY=12.16667, NKTP=12.75
 
 
 ################
-#  Let's estimate 
+#  Let's estimate
 ################
 #Use library GA
 library(GA)
 myMaxiter = 100
-estDVIparam(climateDf = myClimateDf, headingDf = myHeadingDf, accessions = myAccessions, criticalDaylength = myCriticalDaylength, sowingDateGroups = mySowingDateGroups, fixedParams = myFixedParams, maxiter = myMaxiter) 
+estDVIparam(climateDf = myClimateDf, headingDf = myHeadingDf, accessions = myAccessions, criticalDaylength = myCriticalDaylength, sowingDateGroups = mySowingDateGroups, fixedParams = myFixedParams, maxiter = myMaxiter)
 
 
 ##################################################
@@ -349,10 +351,10 @@ for (accessionAnalyzed in accessions) {
             condition <- headingDf2$Sowing %in% sowingDateForAnalysis
             headingDf2 <- headingDf2[condition, ]
         }
-        
+
         RmseLossFunc = makeRmseLossFunc(alpha, beta, g, fixedParams=fixedParams, headingDf=headingDf2, climateDf=climateDf)
 
-  
+
         ga_result <- ga(type = "real-valued", fitness = function(x) -RmseLossFunc(x[1], x[2], x[3]), lower = c(0,0,30), upper = c(40, 40, 150), maxiter=500, popSize=50, monitor=F, parallel=T)
 
         # Result summary
@@ -361,7 +363,7 @@ for (accessionAnalyzed in accessions) {
         estParam = getGAEstimate(ga_result)
         cat(getGAEstimate(ga_result))
         cat("\n")
-        
+
         runPredictHeadingDate(estParam=estParam, headingDf2=headingDf2, fixedParams=fixedParams, accessionAnalyzed=accessionAnalyzed, showDetail = F )
     }
 }
