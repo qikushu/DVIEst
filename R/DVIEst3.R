@@ -251,7 +251,7 @@ estDVIparam = function(climateDf,headingDf, accessions, criticalDaylength, sowin
 
             RmseLossFunc = makeRmseLossFunc(alpha, beta, g, fixedParams=fixedParams, headingDf=headingDf2, climateDf=climateDf)
 
-            ga_result <- ga(type = "real-valued", fitness = function(x) -RmseLossFunc(x[1], x[2], x[3]), lower = c(0,0,30), upper = c(40, 40, 150), maxiter=maxiter, popSize=50, monitor=F, parallel=T)
+            ga_result <- ga(type = "real-valued", fitness = function(x) -RmseLossFunc(x[1], x[2], x[3]), lower = c(0,0,30), upper = c(40, 40, 150), maxiter=maxiter, popSize=50, monitor=F, parallel=2)
 
             # Result summary
             # summary(ga_result)
