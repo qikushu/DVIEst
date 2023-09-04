@@ -55,12 +55,34 @@ buildDVImodel <- function(date,
 # names in the naming convention of R.
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# To make arguments simple, functions to make input objects for 
+# estDVIparam() were defined as shown above.
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# estDVIparam = function(climateDf,headingDf, accessions, criticalDaylength, sowingDateGroups, fixedParams, maxiter) {
+# Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 estDVIparam <- function(object,
                         fixed_param = dviFixedParam(),
                         ga_param = gaFixedParam()) {
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    
+    # Validate input objects
     stopifnot(inherits(x = object, "DviModel"))
     stopifnot(inherits(x = fixed_param, "DviParam"))
     stopifnot(inherits(x = ga_param, "GaParam"))
+    
+    
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Loops over accessions and sowing date groups should be 
+    # handled outside of this function.
+    # The estDVIparam() funcrion takes one dataset including climate information, 
+    # sowing, and heading dates for one accession and estimate parameters 
+    # for a DVI model for the accession.
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    # for (accessionAnalyzed in accessions) {
     
     # Fixed parameters
     
@@ -83,6 +105,24 @@ estDVIparam <- function(object,
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         fixed_param$pCritical <- Inf
     }
+    
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # No need to redefine fixedParams
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # fixedParams <- list(
+    #     tb = fixedParams$tb,
+    #     tc = fixedParams$tc,
+    #     to = fixedParams$to,
+    #     pb = fixedParams$pb,
+    #     po = fixedParams$po,
+    #     pc = fixedParams$pc,
+    #     pCritical = pCritical
+    # )
+    
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Delete an unnecessary loop inside this function
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # for (sowingDateForAnalysis in sowingDateGroups) {
     
     
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -284,12 +324,39 @@ estDVIparam <- function(object,
     
     # At sowing date, observed DVS set as 0 and DVR is defined as f(t)/ g
     # temprature at sowing data
+    
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # t = climateDf[sowingDateRowIndex,"Temp"]
+    # DVSsowing = DVR = funcT(tb, tc, to, t, alpha) / g
+    # errorSowing = 0 - DVSsowing
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     dvs_sowing <- .funcT(fp = fixed_param,
                          t = climate$temp[s_date_i],
                          alpha = alpha)
     error_sowing <- 0 - dvs_sowing / g
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     
     # At heading date DVS = 1
+    
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # DVSheading = 0
+    # for (i in sowingDateRowIndex:headingDateRowIndex) {
+    #     date = climateDf[i,"Date"]
+    #     t = climateDf[i,"Temp"]
+    #     p = climateDf[i,"DayLength"]
+    #     
+    #     if (dvs1 <= DVSheading && DVSheading <= dvs2) {
+    #         DVR = funcT(tb=tb, tc=tc, to=to, t=t, alpha=alpha) * funcP(pb=pb, pc=pc, po=po, p=p, beta=beta, pCritical=pCritical) / g
+    #     } else {
+    #         DVR = funcT(tb=tb, tc=tc, to=to, t=t, alpha=alpha) / g
+    #     }
+    #     
+    #     DVSheading = DVSheading + DVR
+    #     # for debug
+    #     #print(paste0("Date: ", date, " Temp: ", t, " DayLength: ", p, " DVR :", DVR, " DVSheading : ", DVSheading ))
+    # }
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     dvs_heading <- 0
     for (i in seq(s_date_i, h_date_i)) {
         dvr <- .funcT(fp = fixed_param,
@@ -310,6 +377,25 @@ estDVIparam <- function(object,
 }
 
 .calcRMSE <- function(fixed_param, alpha, beta, g, model) {
+
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Somtimes vapply() is faster than for loop and improve the code visibility
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>    
+    # # initialization
+    # allErrors = c()
+    # # cat(sprintf("%s\t%s\t%s\t%s", "alpha", "beta", "g", "rmse"))
+    # 
+    # for (i in 1:nrow(headingDf)) {
+    #     sowingDate = headingDf[i, "Sowing"]
+    #     headingDate = headingDf[i, "Heading"]
+    #     errors = calcDVS(fixedParams=fixedParams, alpha=alpha, beta=beta, g=g, sowingDate=sowingDate, headingDate=headingDate, climateDf=climateDf)
+    #     
+    #     # Record errors as the vectors
+    #     allErrors = c(allErrors, errors)
+    # }
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     out <- vapply(X = seq_along(model$sowing),
                   FUN.VALUE = numeric(2), 
                   FUN = .calcDVS, 
@@ -321,6 +407,7 @@ estDVIparam <- function(object,
                   heading = model$heading,
                   sowing = model$sowing)
     out <- as.vector(out)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     
     if (length(out) > 0) {
         out <- sqrt(mean(out^2))
@@ -376,10 +463,37 @@ estDVIparam <- function(object,
     dvs2 <- 0.345 + 0.005 * g
     
     # # Get the row indices for the sowing date
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # sowingDateRowIndex <- which(climateDf$Date == sowingDate)
+    # lastIndex <- length(climateDf$Date)
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     s_date_i <- which(climate$date == sowing_date)
     last_i <- length(climate$date)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     
-    #
+    
+    
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # DVSheading = 0
+    # for (i in sowingDateRowIndex:lastIndex) {
+    #     date = climateDf[i,"Date"]
+    #     t = climateDf[i,"Temp"]
+    #     p = climateDf[i,"DayLength"]
+    #     
+    #     if (dvs1 <= DVSheading && DVSheading <= dvs2) {
+    #         DVR = funcT(tb=tb, tc=tc, to=to, t=t, alpha=alpha) * funcP(pb=pb, pc=pc, po=po, p=p, beta=beta, pCritical=pCritical) / g
+    #     } else {
+    #         DVR = funcT(tb=tb, tc=tc, to=to, t=t, alpha=alpha) / g
+    #     }
+    #     
+    #     DVSheading = DVSheading + DVR
+    #     
+    #     if (DVSheading > 1) {
+    #         #print(DVSheading)
+    #         return(date)
+    #     }
+    # }
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     dvs_heading <- 0
     for (i in seq(s_date_i, last_i)) {
         dvr <- .funcT(fp = fixed_param,
@@ -398,20 +512,43 @@ estDVIparam <- function(object,
             return(climate$date[i])
         }
     }
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     return(NA)
 }
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Define a function to predict the heading date based on the given model and 
+# inputs.
+# This function is defined as a method of the S3 generic function predict().
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 predict.DviEst <- function(object, new_model = NULL) {
+    
+    # Validate the input
     stopifnot(inherits(x = object, "DviEst"))
     
+    # Get the parameters estimated using GA
     est_param <- .getGAEstimate(ga_result = object$ga)
     
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Allow this function to predict the heading date based on 
+    # newly supplied climate information and a sowing date, but not
+    # based on the input data used for the parameter estimation using GA.
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if(is.null(new_model)){
         model <- object$model
     } else {
+        stopifnot(inherits(x = new_model, "DviModel"))
         model <- new_model
     }
     
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # predictedDates <- vector("numeric", nrow(headingDf2))
+    # for (i in 1:nrow(headingDf2)) {
+    #     sowingDate <- headingDf2[i, "Sowing"]  # SowingDate 列を取得し、適切な変数に代入
+    #     predictedDate <- predictHeadingDate(fixedParams=fixedParams, alpha=est_alpha, beta=est_beta, g=est_g, sowingDate=sowingDate, climateDf=climateDf)
+    #     predictedDates[i] <- predictedDate
+    # }
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     hd_pred <- vapply(X = model$sowing,
                       FUN.VALUE = character(1),
                       FUN = .predictHeadingDate,
@@ -420,7 +557,34 @@ predict.DviEst <- function(object, new_model = NULL) {
                       beta = est_param[2], 
                       g = est_param[3],
                       climate = model$climate)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Let this function output a predicted heading date and the number of 
+    # predicted days to heading.
+    # Only if NOT new_model was specified, this function returns 
+    # the observed headng date, the number of observed days to heading, and
+    # the correlation between the prediction and observation.
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#     # Add a new column to the data frame."
+#     headingDf3=headingDf2
+#     headingDf3$PredictedHeadingDate <- predictedDates
+#     
+#     observedHeadingDates = as.Date(headingDf3[,"Heading"])
+#     sowingDates = as.Date(headingDf3[,"Sowing"])
+#     diffObs = as.integer(sowingDates - observedHeadingDates ) * (-1)
+#     predictedHeadingDates = as.Date(headingDf3[,"PredictedHeadingDate"])
+#     diffPred = as.integer(sowingDates - predictedHeadingDates ) * (-1)
+#     headingDf4 = cbind(headingDf3,diffObs, diffPred)
+#     
+#     if (showDetail == T) {
+#         print(headingDf4)
+#     }
+#     cat("cor: ",cor(diffObs, diffPred,use = "complete.obs"), "\n")
+#     plot(diffObs, diffPred, main = accessionAnalyzed)
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     sowing_dates <- as.Date(model$sowing)
     if(is.null(model$heading)){
         dth_obs <- NA
@@ -445,8 +609,13 @@ predict.DviEst <- function(object, new_model = NULL) {
     
     class(object) <- c(class(object), "DviEst")
     return(object)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 }
 
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Define a function to show simple summary of the DviEst object
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 summary.DviEst <- function(x){
     cat("Accession: ", x$model$acc, "\n")
     cat("Estimated parameters:\n")
@@ -454,14 +623,24 @@ summary.DviEst <- function(x){
     cat("Correlation: ", x$correlation)
 }
 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Define a function to draw a scatter plot to show correlation between 
+# the predicted and observed values.
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 plotDviEst<- function(object){
+    # Validate the input.
     stopifnot(inherits(x = object, "DviEst"))
+    
+    # Check if predicted values exist.
     if(is.null(object$prediction)){
         stop("No predicted values. Run predict.DviEst().")
     }
     if(all(is.na(object$prediction$DTH_Obs))){
         stop("Observed data was not provided.")
     }
+    
+    # Make a ggplot object with minimum aesthetics and output the object
+    # to allow users additional modification of the plot.
     p <- ggplot(data.frame(Predicted = object$prediction$DTH_Pred,
                            Observed = object$prediction$DTH_Obs)) +
         geom_point(aes(x = Observed, y = Predicted)) +
