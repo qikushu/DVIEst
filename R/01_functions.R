@@ -1,8 +1,38 @@
-gaFixedParam <- function(lower = c(0, 0, 30),
-                         upper = c(40, 40, 150),
-                         maxiter = 100,
-                         popSize = 50,
-                         parallel = 1){
+#########################################################
+# Functions for the parameter estimation of a DVI model #
+#########################################################
+
+
+#' Set genetic algorithm parameters
+#' 
+#' Create a parameter object to control the parameter estimation by a genetic 
+#' algorithm.
+#' 
+#' @param lower a vector of length equal to the decision variables providing the
+#'  lower bounds of the search space in case of real-valued or permutation 
+#'  encoded optimizations. 
+#' @param upper a vector of length equal to the decision variables providing the
+#'  upper bounds of the search space in case of real-valued or permutation
+#'   encoded optimizations.
+#' @param maxiter the maximum number of iterations to run before the GA search 
+#' is halted.
+#' @param popSize the population size.
+#' @param parallel An optional argument which allows to specify if the Genetic 
+#' Algorithm should be run sequentially or in parallel. See [GA::ga()] for more 
+#' details.
+#' 
+#' @return A GaParam object that can be specified to the `ga_param` argument of
+#' [estDVIparam()]
+#' 
+#' @seealso GA::ga()
+#' 
+#' @export 
+#' 
+gaParam <- function(lower = c(0, 0, 30),
+                    upper = c(40, 40, 150),
+                    maxiter = 100,
+                    popSize = 50,
+                    parallel = 1){
     out <- list(lower = lower, 
                 upper = upper, 
                 maxiter = maxiter,
@@ -12,17 +42,61 @@ gaFixedParam <- function(lower = c(0, 0, 30),
     return(out)
 }
 
+
+#' Set fixed parameters of DVI models
+#' 
+#' Create a parameter object to specify fixed parameters of a DVI model.
+#' 
+#' @param tb a numeric value to specify the base temperature.
+#' @param to a numeric value to specify the optimal temperature.
+#' @param tc a numeric value to specify the ceiling temperature.
+#' @param pb a numeric value to specify the base photoperiod.
+#' @param po a numeric value to specify the optimal photoperiod.
+#' @param pc a numeric value to specify the ceiling photoperiod.
+#' 
+#' @return A DviParam object that can be specified to the `fixed_param` 
+#' argument of [estDVIparam()]
+#' 
+#' @export 
+#' 
 dviFixedParam <- function(tb = 8,
-                          tc = 42,
                           to = 30,
+                          tc = 42,
                           pb = 0,  
                           po = 10, 
                           pc = 24){
-    out <- list(tb = tb, tc = tc, to = to, pb = pb, po = po, pc = pc)
+    out <- list(tb = tb, to = to, tc = tc, pb = pb, po = po, pc = pc)
     class(out) <- c(class(out), "DviParam")
     return(out)
 }
 
+
+#' Create an input object
+#' 
+#' Create an input object for the parameter estimation of the DVI model using 
+#' a genetic algorithm.
+#' 
+#' @param date a character vector to indicate the dates on which day lengths
+#' and temperature were measured. The length should match the lengths of 
+#' `day_len` and `temp`.
+#' @param day_len a numeric vector to indicate the dates on which day lengths 
+#' and temperature were measured. The length should match the lengths of `date` 
+#' and `temp`.
+#' @param temp a numeric vector to indicate the dates on which day lengths and
+#' temperature were measured. The length should match the lengths of `date` 
+#' and `day_len`.
+#' @param sowing a numeric value to indicate the sowing date.
+#' @param heading a numeric value to indicate the heading date.
+#' @param critical a numeric value to indicate the critical day length.
+#' @param acc a character indicates sample ID.
+#' 
+#' @details Dates should be given in the 'YYYY-MM-DD' format.
+#' 
+#' @return A DviModel object that can be specified to the `model` argument of
+#' [estDVIparam()]
+#' 
+#' @export 
+#' 
 buildDVImodel <- function(date,
                           day_len,
                           temp,
@@ -30,23 +104,105 @@ buildDVImodel <- function(date,
                           heading,
                           critical,
                           acc){
-    climate <- list(date = date, day_len = day_len, temp = temp)
+    if(length(date) != length(day_len)){
+        stop("The lengths of date and day_len should be the same.")
+    }
+    if(length(date) != length(temp)){
+        stop("The lengths of date and temp should be the same.")
+    }
+    is_date <- try(as.Date(date))
+    if(inherits(x = is_date, what = "try-error")){
+        stop("date should be a character vector of dates in a valid format")
+    }
+    is_date <- try(as.Date(heading))
+    if(inherits(x = is_date, what = "try-error")){
+        stop("heading should be a character vector of dates in a valid format")
+    }
+    is_date <- try(as.Date(sowing))
+    if(inherits(x = is_date, what = "try-error")){
+        stop("sowing should be a character vector of dates in a valid format")
+    }
+    
+    incl_na <- is.na(date) | is.na(day_len) | is.na(temp)
+    if(any(incl_na)){
+        message("NA was found in the given climate information. \n", 
+                "The data point with NA was removed.")
+    }
+    
+    climate <- list(date = date[!incl_na],
+                    day_len = day_len[!incl_na],
+                    temp = temp[!incl_na])
+    
+    incl_na <- is.na(sowing) | is.na(heading)
+    if(any(incl_na)){
+        message("NA was found in the given sowing and/or heading dates. \n", 
+                "The data point with NA was removed.")
+    }
+    
+    sowing_valid <- sapply(sowing, function(x){
+        return(any(date <= x))
+    })
+    
+    heading_valid <- sapply(heading, function(x){
+        return(any(date >= x))
+    })
+    
+    if(any(!sowing_valid & !heading_valid)){
+        stop("Sowing and/or heading dates contains date(s) out of the range of",
+             " the dates on which climate information is available.")
+    }
     
     out <- list(climate = climate, 
-                sowing = sowing,
-                heading = heading,
+                sowing = sowing[!incl_na],
+                heading = heading[!incl_na],
                 critical = critical, 
                 acc = acc)
     class(out) <- c(class(out), "DviModel")
     return(out)
 }
 
-#'
-#'
-#'
-#'
-#'
-#'
+
+#' DVI model parameter estimation
+#' 
+#' Estimate the parameters of the DVI model using a genetic algorithm.
+#' 
+#' @param object a DviModel object created by [buildDVImodel()].
+#' @param fixed_param a DviParam object created by [dviFixedParam()].
+#' @param ga_parma a GaParam object created by [gaParam()].
+#' 
+#' @details Dates should be given in the 'YYYY-MM-DD' format.
+#' 
+#' @return A DviEst object.
+#' 
+#' @seealso [predict.DviEst()], [summary.DviEst()] and [plotDviEst]
+#' 
+#' @importFrom GA ga
+#' 
+#' @export 
+#' 
+#' @examples 
+#' fixed_param <- dviFixedParam()
+#' ga_param <- gaParam()
+#' date <- seq.Date(from = as.Date("2023-06-01"),
+#'                  to = as.Date("2023-08-31"),
+#'                  by = "day")
+#' day_len <- c(seq(12, 13.5, length.out = 30),
+#'              seq(13.5, 12, length.out = length(date) - 30))
+#' temp = c(sample(x = 25:30, size = 30, replace = TRUE), 
+#'          sample(x = 25:35, size = 31, replace = TRUE),
+#'          sample(x = 30:35, size = 31, replace = TRUE))
+#' dvi_model <- buildDVImodel(date = date,
+#'                            day_len = day_len,
+#'                            temp = temp,
+#'                            sowing = "2023-06-05",
+#'                            heading = "2023-08-20", 
+#'                            critical = 13,
+#'                            acc = "test")
+#'                            
+#' dvi_est <- estDVIparam(object = dvi_model, 
+#'                        fixed_param = fixed_param,
+#'                        ga_param = ga_param)
+#' 
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Object names were simplified to avoid typo and keep better visibility 
@@ -65,8 +221,8 @@ buildDVImodel <- function(date,
 # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 estDVIparam <- function(object,
                         fixed_param = dviFixedParam(),
-                        ga_param = gaFixedParam()) {
-# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                        ga_param = gaParam()) {
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     
     # Validate input objects
     stopifnot(inherits(x = object, "DviModel"))
@@ -77,7 +233,7 @@ estDVIparam <- function(object,
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # Loops over accessions and sowing date groups should be 
     # handled outside of this function.
-    # The estDVIparam() funcrion takes one dataset including climate information, 
+    # The estDVIparam() funcrtion takes one dataset including climate information, 
     # sowing, and heading dates for one accession and estimate parameters 
     # for a DVI model for the accession.
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -96,14 +252,14 @@ estDVIparam <- function(object,
     # if (exists("criticalDaylength") && exists("accessionAnalyzed") && !is.null(criticalDaylength[[accessionAnalyzed]])) {
     # modified >>>>>>>>>>>
     if (!is.null(object$critical)) {
-        fixed_param$pCritical <- object$critical
+        fixed_param$critical <- object$critical
         # <<<<<<<<<<<<<<<<<<<<
         
     } else {
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # See the comment in the code of funcP() to get why I set Inf here
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        fixed_param$pCritical <- Inf
+        fixed_param$critical <- Inf
     }
     
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -179,10 +335,15 @@ estDVIparam <- function(object,
     # cat("\n")
     # runPredictHeadingDate(estParam=estParam, headingDf2=headingDf2, fixedParams=fixedParams, accessionAnalyzed=accessionAnalyzed,climateDf=climateDf, showDetail = F )
     # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    
+    # Get the parameters estimated using GA
+    est_param <- .getGAEstimate(ga_result = ga_result)
+    
     out <- list(ga = ga_result, 
                 model = object,
                 fixed_param = fixed_param,
-                ga_param = ga_param)
+                ga_param = ga_param,
+                estimated_param = est_param)
     
     class(out) <- c(class(out), "DviEst")
     return(out)
@@ -259,10 +420,10 @@ estDVIparam <- function(object,
     # } else if (po <= p && p <= pCritical) {
     #     log_funcP = beta *  log((p-pb)/(po-pb)) + beta  * (pc - po) / (po-pb)  * log((pc-p)/(pc-po))
     # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    if (fp$pCritical < p) {
+    if (fp$critical < p) {
         output <- 0
         
-    } else if (fp$po <= p && p <= fp$pCritical) {
+    } else if (fp$po <= p && p <= fp$critical) {
         log_funcP <- beta * log((p - fp$pb) / (fp$po - fp$pb)) +
             beta * {(fp$pc - fp$po) / (fp$po - fp$pb)} *
             log((fp$pc - p) / (fp$pc - fp$po))
@@ -377,7 +538,7 @@ estDVIparam <- function(object,
 }
 
 .calcRMSE <- function(fixed_param, alpha, beta, g, model) {
-
+    
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # Somtimes vapply() is faster than for loop and improve the code visibility
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -427,6 +588,198 @@ estDVIparam <- function(object,
     )
 }
 
+
+#' DVI model parameter estimation
+#' 
+#' Estimate the parameters of the DVI model using a genetic algorithm.
+#' 
+#' @param object a DviModel object created by [buildDVImodel()].
+#' @param fixed_param a DviParam object created by [dviFixedParam()].
+#' @param ga_parma a GaParam object created by [gaParam()].
+#' 
+#' @details Dates should be given in the 'YYYY-MM-DD' format.
+#' 
+#' @return A DviEst object.
+#' 
+#' @seealso [predict.DviEst()], [summary.DviEst()] and [plotDviEst]
+#' 
+#' @export 
+#' 
+#' @examples 
+#' fixed_param <- dviFixedParam()
+#' ga_param <- gaParam()
+#' date <- seq.Date(from = as.Date("2023-06-01"),
+#'                  to = as.Date("2023-08-31"),
+#'                  by = "day")
+#' day_len <- c(seq(12, 13.5, length.out = 30),
+#'              seq(13.5, 12, length.out = length(date) - 30))
+#' temp = c(sample(x = 25:30, size = 30, replace = TRUE), 
+#'          sample(x = 25:35, size = 31, replace = TRUE),
+#'          sample(x = 30:35, size = 31, replace = TRUE))
+#' dvi_model <- buildDVImodel(date = date,
+#'                            day_len = day_len,
+#'                            temp = temp,
+#'                            sowing = "2023-06-05",
+#'                            heading = "2023-08-20", 
+#'                            critical = 13,
+#'                            acc = "test")
+#'                            
+#' dvi_est <- estDVIparam(object = dvi_model, 
+#'                        fixed_param = fixed_param,
+#'                        ga_param = ga_param)
+#' 
+
+################################################################################
+
+##############################################
+# Functions for the heading date predication #
+##############################################
+
+
+#' Heading date prediction
+#' 
+#' Predict heading dates based on sowing dates and the DVI model with the 
+#' estimated parameters.
+#' 
+#' @param object a DviEst object created by [estDVIparam()].
+#' @param new_mode a DviModel object created by [buildDVImodel()].
+#' 
+#' @details The predicated heading date (HD_Pred) and the days to heading
+#' (DTH_Pred) will be returned as a data.frame in the prediction slot of the 
+#' output DviEst object. If the observed heading dates are available in the 
+#' input DviEst object, these values also returned at the DTH_Obs column of 
+#' the data.frame in the prediction slot. The predicted heading dates will be
+#' compared with the observed heading dates recorded in the given DviEst object, 
+#' and the correlation coefficient between these will be returned in the 
+#' correlation slot of the DviEst object. 
+#' If a DviModle object was specified to `new_model`, only the predicated 
+#' heading date (HD_Pred) and days to heading (DTH_Pred) will be returned in the 
+#' prediction slot.
+#' 
+#' @return A DviEst object.
+#' 
+#' @seealso [predict.DviEst()], [summary.DviEst()] and [plotDviEst]
+#' 
+#' @export 
+#' 
+#' @examples 
+#' fixed_param <- dviFixedParam()
+#' ga_param <- gaParam()
+#' date <- seq.Date(from = as.Date("2023-06-01"),
+#'                  to = as.Date("2023-08-31"),
+#'                  by = "day")
+#' day_len <- c(seq(12, 13.5, length.out = 30),
+#'              seq(13.5, 12, length.out = length(date) - 30))
+#' temp = c(sample(x = 25:30, size = 30, replace = TRUE), 
+#'          sample(x = 25:35, size = 31, replace = TRUE),
+#'          sample(x = 30:35, size = 31, replace = TRUE))
+#' dvi_model <- buildDVImodel(date = date,
+#'                            day_len = day_len,
+#'                            temp = temp,
+#'                            sowing = "2023-06-05",
+#'                            heading = "2023-08-20", 
+#'                            critical = 13,
+#'                            acc = "test")
+#'                            
+#' dvi_est <- estDVIparam(object = dvi_model, 
+#'                        fixed_param = fixed_param,
+#'                        ga_param = ga_param)
+#' 
+#' dvi_est <- predict(object = dvi_est)
+#' 
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Define a function to predict the heading date based on the given model and 
+# inputs.
+# This function is defined as a method of the S3 generic function predict().
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+predict.DviEst <- function(object, new_model = NULL) {
+    
+    # Validate the input
+    stopifnot(inherits(x = object, "DviEst"))
+    
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Allow this function to predict the heading date based on 
+    # newly supplied climate information and a sowing date, but not
+    # based on the input data used for the parameter estimation using GA.
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if(is.null(new_model)){
+        model <- object$model
+    } else {
+        stopifnot(inherits(x = new_model, "DviModel"))
+        model <- new_model
+    }
+    
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # predictedDates <- vector("numeric", nrow(headingDf2))
+    # for (i in 1:nrow(headingDf2)) {
+    #     sowingDate <- headingDf2[i, "Sowing"]  # SowingDate 列を取得し、適切な変数に代入
+    #     predictedDate <- predictHeadingDate(fixedParams=fixedParams, alpha=est_alpha, beta=est_beta, g=est_g, sowingDate=sowingDate, climateDf=climateDf)
+    #     predictedDates[i] <- predictedDate
+    # }
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    hd_pred <- vapply(X = model$sowing,
+                      FUN.VALUE = character(1),
+                      FUN = .predictHeadingDate,
+                      fixed_param = object$fixed_param,
+                      alpha = object$estimated_param[1],
+                      beta = object$estimated_param[2], 
+                      g = object$estimated_param[3],
+                      climate = model$climate)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # Let this function output a predicted heading date and the number of 
+    # predicted days to heading.
+    # Only if NOT new_model was specified, this function returns 
+    # the observed headng date, the number of observed days to heading, and
+    # the correlation between the prediction and observation.
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    #     # Add a new column to the data frame."
+    #     headingDf3=headingDf2
+    #     headingDf3$PredictedHeadingDate <- predictedDates
+    #     
+    #     observedHeadingDates = as.Date(headingDf3[,"Heading"])
+    #     sowingDates = as.Date(headingDf3[,"Sowing"])
+    #     diffObs = as.integer(sowingDates - observedHeadingDates ) * (-1)
+    #     predictedHeadingDates = as.Date(headingDf3[,"PredictedHeadingDate"])
+    #     diffPred = as.integer(sowingDates - predictedHeadingDates ) * (-1)
+    #     headingDf4 = cbind(headingDf3,diffObs, diffPred)
+    #     
+    #     if (showDetail == T) {
+    #         print(headingDf4)
+    #     }
+    #     cat("cor: ",cor(diffObs, diffPred,use = "complete.obs"), "\n")
+    #     plot(diffObs, diffPred, main = accessionAnalyzed)
+    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    sowing_dates <- as.Date(model$sowing)
+    if(is.null(model$heading)){
+        dth_obs <- NA
+    } else {
+        hd_obs <- as.Date(model$heading)
+        dth_obs <- as.integer(hd_obs - sowing_dates)
+    }
+    hd_pred <- as.Date(hd_pred)
+    dth_pred <- as.integer(hd_pred - sowing_dates)
+    
+    object$prediction <- data.frame(HD_Pred = hd_pred, 
+                                    DTH_Obs = dth_obs, 
+                                    DTH_Pred = dth_pred)
+    
+    if(is.na(dth_obs[1])){
+        object$correlation <- NA
+        
+    } else {
+        object$correlation <- cor(dth_obs, dth_pred, use = "complete.obs")
+    }
+    
+    class(object) <- c(class(object), "DviEst")
+    return(object)
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+}
+
 .getGAEstimate <- function(ga_result) {
     solution <- c(as.numeric(ga_result@solution[1, ]), -ga_result@fitnessValue)
     names(solution) <- c("Estimated Alpha",
@@ -435,7 +788,6 @@ estDVIparam <- function(object,
                          "Minimum RSME")
     return(solution)
 }
-
 
 # For prediction
 # Calculation of DVS at the given sowing and heading date.
@@ -516,112 +868,57 @@ estDVIparam <- function(object,
     return(NA)
 }
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Define a function to predict the heading date based on the given model and 
-# inputs.
-# This function is defined as a method of the S3 generic function predict().
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-predict.DviEst <- function(object, new_model = NULL) {
-    
-    # Validate the input
-    stopifnot(inherits(x = object, "DviEst"))
-    
-    # Get the parameters estimated using GA
-    est_param <- .getGAEstimate(ga_result = object$ga)
-    
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # Allow this function to predict the heading date based on 
-    # newly supplied climate information and a sowing date, but not
-    # based on the input data used for the parameter estimation using GA.
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    if(is.null(new_model)){
-        model <- object$model
-    } else {
-        stopifnot(inherits(x = new_model, "DviModel"))
-        model <- new_model
-    }
-    
-    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    # predictedDates <- vector("numeric", nrow(headingDf2))
-    # for (i in 1:nrow(headingDf2)) {
-    #     sowingDate <- headingDf2[i, "Sowing"]  # SowingDate 列を取得し、適切な変数に代入
-    #     predictedDate <- predictHeadingDate(fixedParams=fixedParams, alpha=est_alpha, beta=est_beta, g=est_g, sowingDate=sowingDate, climateDf=climateDf)
-    #     predictedDates[i] <- predictedDate
-    # }
-    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    hd_pred <- vapply(X = model$sowing,
-                      FUN.VALUE = character(1),
-                      FUN = .predictHeadingDate,
-                      fixed_param = object$fixed_param,
-                      alpha = est_param[1],
-                      beta = est_param[2], 
-                      g = est_param[3],
-                      climate = model$climate)
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # Let this function output a predicted heading date and the number of 
-    # predicted days to heading.
-    # Only if NOT new_model was specified, this function returns 
-    # the observed headng date, the number of observed days to heading, and
-    # the correlation between the prediction and observation.
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-    # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#     # Add a new column to the data frame."
-#     headingDf3=headingDf2
-#     headingDf3$PredictedHeadingDate <- predictedDates
-#     
-#     observedHeadingDates = as.Date(headingDf3[,"Heading"])
-#     sowingDates = as.Date(headingDf3[,"Sowing"])
-#     diffObs = as.integer(sowingDates - observedHeadingDates ) * (-1)
-#     predictedHeadingDates = as.Date(headingDf3[,"PredictedHeadingDate"])
-#     diffPred = as.integer(sowingDates - predictedHeadingDates ) * (-1)
-#     headingDf4 = cbind(headingDf3,diffObs, diffPred)
-#     
-#     if (showDetail == T) {
-#         print(headingDf4)
-#     }
-#     cat("cor: ",cor(diffObs, diffPred,use = "complete.obs"), "\n")
-#     plot(diffObs, diffPred, main = accessionAnalyzed)
-    # Modified >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    sowing_dates <- as.Date(model$sowing)
-    if(is.null(model$heading)){
-        dth_obs <- NA
-    } else {
-        hd_obs <- as.Date(model$heading)
-        dth_obs <- as.integer(hd_obs - sowing_dates)
-    }
-    hd_pred <- as.Date(hd_pred)
-    dth_pred <- as.integer(hd_pred - sowing_dates)
-    
-    object$estimated_param <- est_param
-    object$prediction <- data.frame(HD_Pred = hd_pred, 
-                                    DTH_Obs = dth_obs, 
-                                    DTH_Pred = dth_pred)
-    
-    if(is.na(dth_obs)){
-        object$correlation <- NA
-        
-    } else {
-        object$correlation <- cor(dth_obs, dth_pred, use = "complete.obs")
-    }
-    
-    class(object) <- c(class(object), "DviEst")
-    return(object)
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-}
+################################################################################
+
+#################
+# Plot function #
+#################
 
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# Define a function to show simple summary of the DviEst object
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-summary.DviEst <- function(x){
-    cat("Accession: ", x$model$acc, "\n")
-    cat("Estimated parameters:\n")
-    print(x$estimated_param)
-    cat("Correlation: ", x$correlation)
-}
+#' Plot scatter plot of correlation
+#' 
+#' Plot a scatter plot to visualize correlation between the observed heading 
+#' dates and predicated heading dates.
+#' 
+#' @param object a DviEst object created by [estDVIparam()].
+#' 
+#' @return A ggplot2 object.
+#' 
+#' @seealso [predict.DviEst()], [summary.DviEst()] and [plotDviEst]
+#' 
+#' @import ggplot2
+#' 
+#' @export 
+#' 
+#' @examples 
+#' fixed_param <- dviFixedParam()
+#' ga_param <- gaParam()
+#' date <- seq.Date(from = as.Date("2023-06-01"),
+#'                  to = as.Date("2023-08-31"),
+#'                  by = "day")
+#' day_len <- c(seq(12, 13.5, length.out = 30),
+#'              seq(13.5, 12, length.out = length(date) - 30))
+#' temp = c(sample(x = 25:30, size = 30, replace = TRUE), 
+#'          sample(x = 25:35, size = 31, replace = TRUE),
+#'          sample(x = 30:35, size = 31, replace = TRUE))
+#' dvi_model <- buildDVImodel(date = date,
+#'                            day_len = day_len,
+#'                            temp = temp,
+#'                            sowing = "2023-06-05",
+#'                            heading = "2023-08-20", 
+#'                            critical = 13,
+#'                            acc = "test")
+#'                            
+#' dvi_est <- estDVIparam(object = dvi_model, 
+#'                        fixed_param = fixed_param,
+#'                        ga_param = ga_param)
+#' 
+#' dvi_est <- predict(object = dvi_est)
+#' 
+#' p <- plotDviEst(object = dvi_est)
+#' 
+#' print(p)
+#' 
 
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # Define a function to draw a scatter plot to show correlation between 
@@ -639,11 +936,171 @@ plotDviEst<- function(object){
         stop("Observed data was not provided.")
     }
     
+    r <- signif(x = object$correlation, digits = 3)
+    acc <- object$model$acc
+    
     # Make a ggplot object with minimum aesthetics and output the object
     # to allow users additional modification of the plot.
     p <- ggplot(data.frame(Predicted = object$prediction$DTH_Pred,
                            Observed = object$prediction$DTH_Obs)) +
         geom_point(aes(x = Observed, y = Predicted)) +
-        labs(title = object$model$acc)
+        labs(title = bquote(.(acc) ~ r^2 ~ "=" ~ .(r)))
     return(p)
+}
+
+
+################################################################################
+
+#####################
+# Utility functions #
+#####################
+
+#' Show summary of a DviModel object
+#'  
+#' @param x a DviModel object created by [buildDVImodel()].
+#' 
+#' @return Invisibly return the input object itself.
+#' 
+#' @export 
+#' 
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Define a function to show simple summary of the DviEst object
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+summary.DviModel <- function(x){
+    cat("Accession: ", x$acc, "\n\n")
+    if(length(x$sowing) > 10){
+        cat("Sowing date: \n", x$sowing[1:10], 
+            "... (additional", length(x$sowing) - 10, "data)\n\n")
+        
+    } else {
+        cat("Sowing date: \n", x$sowing, "\n\n")
+    }
+    if(length(x$heading) > 10){
+        cat("Heading date: \n", x$heading[1:10], 
+            "... (additional", length(x$heading) - 10, "data)\n\n")
+        
+    } else {
+        cat("Heading date: \n", x$heading, "\n\n")
+    }
+    cat("Critical day length: ", x$critical, "\n")
+    invisible(x)
+}
+
+#' Show summary of a DviEst object
+#'  
+#' @param x a DviEst object created by [estDVIparam()].
+#' 
+#' @return Invisibly return a data.frame of the summary.
+#' 
+#' @export 
+#' 
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Define a function to show simple summary of the DviEst object
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+summary.DviEst <- function(x){
+    cat("Accession: ", x$model$acc, "\n")
+    cat("Estimated parameters:\n")
+    print(x$estimated_param)
+    if(!is.null(x$correlation)){
+        cat("Correlation: ", x$correlation)
+        invisible(data.frame(acc = x$model$acc,
+                             x$estimated_param,
+                             cor = x$correlation))
+    } else {
+        invisible(data.frame(acc = x$model$acc,
+                             x$estimated_param))
+    }
+}
+
+
+#' Set parameters of a DVI model
+#'  
+#' Set arbitrary values as estimated parameters of a DVI model.
+#' 
+#' @param object a DviModel object created by [buildDVImodel()].
+#' @param fixed_param a DviParam object created by [dviFixedParam()].
+#' @param alpha a numeric value of the temperature-sensitivity coefficient.
+#' @param beta a numeric value of the photoperiod-sensitivity coefficient.
+#' @param g a numeric value of the earliness of flowering under optimal 
+#' photoperiod and temperature.
+#' 
+#' @return a DviEst object.
+#' 
+#' @export 
+#' 
+setDviParam <- function(object, fixed_param, alpha, beta, g){
+    stopifnot(inherits(x = object, "DviModel"))
+    stopifnot(inherits(x = fixed_param, "DviParam"))
+    
+    if(!is.numeric(alpha) | length(alpha) != 1){
+        stop("alpha should be a numeric value.")
+    }
+    if(!is.numeric(beta) | length(beta) != 1){
+        stop("beta should be a numeric value.")
+    }
+    if(!is.numeric(g) | length(g) != 1){
+        stop("g should be a numeric value.")
+    }
+    est_param <- c(alpha, beta, g)
+    names(est_param) <- c("Estimated Alpha",
+                          "Estimated Beta",
+                          "Estimated G")
+    fixed_param$critical <- object$critical
+    
+    out <- list(model = object,
+                fixed_param = fixed_param,
+                estimated_param = est_param)
+    
+    class(out) <- c(class(out), "DviEst")
+    return(out)
+}
+
+
+#' Get estimated parameters of a DVI model
+#'  
+#' Extracted esetimted parameter values from the DviEst object.
+#' 
+#' @param object a DviEstl object created by [estDVIparam()].
+#' 
+#' @return a numeric vector of estimated alpha, beta, and g.
+#' 
+#' @export 
+#' 
+getEstParam <- function(object){
+    stopifnot(inherits(x = object, "DviEst"))
+    return(object$estimated_param[1:3])
+}
+
+#' Get predicted heading dates
+#'  
+#' Extracted predicted heading dates and days-to-heading data
+#' from the DviEst object.
+#' 
+#' @param object a DviEstl object created by [estDVIparam()].
+#' 
+#' @return a data.frame extracted from the prediction slot of the DviEst object.
+#' 
+#' @export 
+#' 
+getPred <- function(object){
+    stopifnot(inherits(x = object, "DviEst"))
+    return(object$prediction)
+}
+
+
+
+#' Get the correlation coefficient
+#'  
+#' Extracted the correlation coefficient from the DviEst object.
+#' 
+#' @param object a DviEstl object created by [estDVIparam()].
+#' 
+#' @return a numeric value of the correlation coefficient.
+#' 
+#' @export 
+#' 
+getCor <- function(object){
+    stopifnot(inherits(x = object, "DviEst"))
+    return(object$correlation)
 }

@@ -1,0 +1,134 @@
+---
+title: "DVIEst user guide"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{DVIEst user guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(DVIEst)
+```
+
+<br>
+Load sample files.
+```{r}
+climate <- read.table(system.file("extdata/climate.txt",
+                                  package = "DVIEst"), header = TRUE)
+dates <- read.table(system.file("extdata/dates.txt",
+                                  package = "DVIEst"), header = TRUE)
+```
+
+<br>
+Create a GaParam object to specify parameters for a genetic algorithm to 
+estimate parameters of a DVI model.
+```{r}
+ga_param <- gaParam(maxiter = 100, parallel = 1)
+```
+<br>
+
+Create a DviParam object to specify fixed parameters of a DVI model.
+```{r}
+fixed_param <- dviFixedParam()
+```
+
+<br>
+Create a DviModel object as input for estDVIparam().
+```{r}
+dvi_model <- buildDVImodel(date = climate$Date, 
+                           day_len = climate$DayLength,
+                           temp = climate$Temp, 
+                           sowing = dates$Sowing[dates$Name == "NKTP"],
+                           heading = dates$Heading[dates$Name == "NKTP"], 
+                           critical = 12.75000,
+                           acc = "NKTP")
+```
+
+<br>
+You can briefly check the summary of the DviModel object.
+```{r}
+summary(dvi_model)
+```
+
+
+<br>
+Estimate parameters of a DVI model using a genetic algorithm.
+```{r eval = FALSE}
+# Do not run this code!
+# The parameter estimation using a genetic algorithm is a computational burden.
+dvi_est <- estDVIparam(object = dvi_model, 
+                       fixed_param = fixed_param, 
+                       ga_param = ga_param)
+```
+<br>
+For a demonstration, set arbitrary values as estimated parameters of the DVI 
+model.
+```{r}
+dvi_est <- setDviParam(object = dvi_model,
+                       fixed_param = fixed_param,
+                       alpha = 5.497095, 
+                       beta = 7.1155689, 
+                       g = 86.4446010)
+```
+
+
+<br>
+Predict the heading date and days-to-heading based on the DVI model with the 
+estimated parameters.
+```{r}
+dvi_est <- predict(dvi_est)
+```
+
+<br>
+You can briefly check the summary of the DviEst object.
+```{r}
+summary(dvi_est)
+```
+
+
+<br>
+Plot the observed and predicted days-to-heading. 
+```{r fig.width=5, fig.height=5}
+p <- plotDviEst(object = dvi_est)
+print(p)
+```
+
+<br>
+Extract the estimated parameters from the DviEst object.
+```{r}
+est_param <- getEstParam(object = dvi_est)
+est_param
+```
+
+<br>
+Extract the prediction from the DviEst object.
+```{r}
+pred_df <- getPred(object = dvi_est)
+head(pred_df)
+```
+Predicted heading dates, observed days-to-heading, and predicted days-to-heading
+from the left column to the right.
+
+<br>
+Extract the correlation coefficient from the DviEst object.
+```{r}
+cor_coef <- getCor(object = dvi_est)
+cor_coef
+```
+
+
+<br>
+<br>
+Session Info.
+```{r}
+sessionInfo()
+```
+
