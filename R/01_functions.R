@@ -1005,9 +1005,9 @@ plotDviEst<- function(object){
     p <- ggplot(data.frame(Predicted = object$prediction$DTH_Pred,
                            Observed = object$prediction$DTH_Obs)) +
         geom_point(aes(x = Observed, y = Predicted)) +
-        geom_segment(aes(x = object$lm$model$observed[lm_pred_edge[1]],
+        geom_segment(aes(x = object$lm$model$dth_obs[lm_pred_edge[1]],
                          y = lm_pred[lm_pred_edge[1]],
-                         xend = object$lm$model$observed[lm_pred_edge[2]],
+                         xend = object$lm$model$dth_obs[lm_pred_edge[2]],
                          yend = lm_pred[lm_pred_edge[2]]), color = "magenta") +
         labs(title = bquote(.(acc) ~ ", " ~ r ~ "=" ~ .(r) ~ ", " ~
                  " Adjusted " ~ R^2 ~ "=" ~ .(r2)))
@@ -1071,8 +1071,8 @@ summary.DviEst <- function(x){
     if(!is.null(x$correlation)){
         cat("Correlation: ", x$correlation)
         lm_summary <- summary(x$lm)
-        cat("R_squared: ", lm_summary$r.squared)
-        cat("Adjusted R_squared: ", lm_summary$adj.r.squared)
+        cat("\nR_squared: ", lm_summary$r.squared)
+        cat("\nAdjusted R_squared: ", lm_summary$adj.r.squared)
         invisible(data.frame(acc = x$model$acc,
                              x$estimated_param,
                              cor = x$correlation,

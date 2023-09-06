@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(DVIEst)
+# library(DVIEst)
 ```
 
 <br>
@@ -161,7 +161,7 @@ The linear model representing the relationship of the observed and predicted
 heading dates also can be extracted from the DviEst object.
 ```{r}
 dvi_lm <- getLM(object = dvi_est)
-dvi_lm
+summary(dvi_lm)
 ```
 
 Just to predict heading dates of samples using the DVI model.
