@@ -23,7 +23,12 @@ You can install `DVIEst` from the GitHub repository.
 if (!requireNamespace("devtools", quietly = TRUE))
     install.packages("devtools")
     
-devtools::install_github("tomoyukif/DVIEst")
+devtools::install_github("tomoyukif/DVIEst", build_vignettes = TRUE)
+```
+
+For more information see vignette or run the following code on a R console.
+```
+browseVignettes(package = "DVIEst")
 ```
 
 ## Citations
