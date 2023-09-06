@@ -16,7 +16,7 @@ DVIEst requires the following packages.
 install.packages("GA")
 install.packages("ggplot2")
 ```
-Building the package vignette may also requires the following packages.
+Building the package vignette may also require the following packages.
 ```
 install.packages("knitr")
 install.packages("rmarkdown")
