@@ -107,7 +107,7 @@ dvi_est <- setDviParam(object = dvi_model,
 Predict the heading date and days-to-heading based on the DVI model with the 
 estimated parameters.
 ```{r}
-dvi_est <- predict(dvi_est)
+dvi_est <- predict(object = dvi_est)
 ```
 
 <br>
@@ -154,6 +154,14 @@ Extract the correlation coefficient from the DviEst object.
 ```{r}
 cor_coef <- getCor(object = dvi_est)
 cor_coef
+```
+
+<br>
+The linear model representing the relationship of the observed and predicted 
+heading dates also can be extracted from the DviEst object.
+```{r}
+dvi_lm <- getLM(object = dvi_est)
+dvi_lm
 ```
 
 Just to predict heading dates of samples using the DVI model.

@@ -813,6 +813,9 @@ predict.DviEst <- function(object, new_model = NULL) {
 
     } else {
         object$correlation <- cor(dth_obs, dth_pred, use = "complete.obs")
+        object$lm <- lm(formula = predicted ~ observed,
+                        data = data.frame(observed = dth_obs,
+                                          predicted = dth_pred))
     }
 
     class(object) <- c(class(object), "DviEst")
@@ -992,14 +995,24 @@ plotDviEst<- function(object){
     }
 
     r <- signif(x = object$correlation, digits = 3)
+    lm <- summary(object$lm)
+    r2 <- signif(x = lm$adj.r.squared, digits = 3)
     acc <- object$model$acc
+
+    lm_pred <- predict(object = object$lm)
+    lm_pred_edge <- c(which.min(lm_pred), which.max(lm_pred))
 
     # Make a ggplot object with minimum aesthetics and output the object
     # to allow users additional modification of the plot.
     p <- ggplot(data.frame(Predicted = object$prediction$DTH_Pred,
                            Observed = object$prediction$DTH_Obs)) +
         geom_point(aes(x = Observed, y = Predicted)) +
-        labs(title = bquote(.(acc) ~ r^2 ~ "=" ~ .(r)))
+        geom_segment(aes(x = object$lm$model$observed[lm_pred_edge[1]],
+                         y = lm_pred[lm_pred_edge[1]],
+                         xend = object$lm$model$observed[lm_pred_edge[2]],
+                         yend = lm_pred[lm_pred_edge[2]]), color = "magenta") +
+        labs(title = bquote(.(acc) ~ ", " ~ r ~ "=" ~ .(r) ~ ", " ~
+                 " Adjusted " ~ R^2 ~ "=" ~ .(r2)))
     return(p)
 }
 
@@ -1158,4 +1171,21 @@ getPred <- function(object){
 getCor <- function(object){
     stopifnot(inherits(x = object, "DviEst"))
     return(object$correlation)
+}
+
+
+#' Get the linear model
+#'
+#' Extracted the linear model that represents the relationship between
+#' the observed and predicted heading dates.
+#'
+#' @param object a DviEstl object created by [estDVIparam()].
+#'
+#' @return a lm class object.
+#'
+#' @export
+#'
+getLM <- function(object){
+    stopifnot(inherits(x = object, "DviEst"))
+    return(object$lm)
 }
