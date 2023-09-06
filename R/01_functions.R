@@ -813,9 +813,7 @@ predict.DviEst <- function(object, new_model = NULL) {
 
     } else {
         object$correlation <- cor(dth_obs, dth_pred, use = "complete.obs")
-        object$lm <- lm(formula = predicted ~ observed,
-                        data = data.frame(observed = dth_obs,
-                                          predicted = dth_pred))
+        object$lm <- lm(formula = dth_pred ~ dth_obs - 1)
     }
 
     class(object) <- c(class(object), "DviEst")
@@ -996,7 +994,7 @@ plotDviEst<- function(object){
 
     r <- signif(x = object$correlation, digits = 3)
     lm <- summary(object$lm)
-    r2 <- signif(x = lm$adj.r.squared, digits = 3)
+    r2 <- signif(x = lm$r.squared, digits = 3)
     acc <- object$model$acc
 
     lm_pred <- predict(object = object$lm)
@@ -1072,9 +1070,14 @@ summary.DviEst <- function(x){
     print(x$estimated_param)
     if(!is.null(x$correlation)){
         cat("Correlation: ", x$correlation)
+        lm_summary <- summary(x$lm)
+        cat("R_squared: ", lm_summary$r.squared)
+        cat("Adjusted R_squared: ", lm_summary$adj.r.squared)
         invisible(data.frame(acc = x$model$acc,
                              x$estimated_param,
-                             cor = x$correlation))
+                             cor = x$correlation,
+                             r_squared = lm_summary$r.squared,
+                             adj_r_squared =lm_summary$adj.r.squared))
     } else {
         invisible(data.frame(acc = x$model$acc,
                              x$estimated_param))
