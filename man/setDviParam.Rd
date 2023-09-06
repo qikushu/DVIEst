@@ -2,9 +2,7 @@
 % Please edit documentation in R/01_functions.R
 \name{setDviParam}
 \alias{setDviParam}
-\title{Set parameters of a DVI model
-
-Set arbitrary values as estimated parameters of a DVI model.}
+\title{Set parameters of a DVI model}
 \usage{
 setDviParam(object, fixed_param, alpha, beta, g)
 }
@@ -24,7 +22,5 @@ photoperiod and temperature.}
 a DviEst object.
 }
 \description{
-Set parameters of a DVI model
-
 Set arbitrary values as estimated parameters of a DVI model.
 }

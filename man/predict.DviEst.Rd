@@ -46,24 +46,24 @@ date <- seq.Date(from = as.Date("2023-06-01"),
                  by = "day")
 day_len <- c(seq(12, 13.5, length.out = 30),
              seq(13.5, 12, length.out = length(date) - 30))
-temp = c(sample(x = 25:30, size = 30, replace = TRUE), 
+temp = c(sample(x = 25:30, size = 30, replace = TRUE),
          sample(x = 25:35, size = 31, replace = TRUE),
          sample(x = 30:35, size = 31, replace = TRUE))
 dvi_model <- buildDVImodel(date = date,
                            day_len = day_len,
                            temp = temp,
                            sowing = "2023-06-05",
-                           heading = "2023-08-20", 
+                           heading = "2023-08-20",
                            critical = 13,
                            acc = "test")
-                           
-dvi_est <- estDVIparam(object = dvi_model, 
+
+dvi_est <- estDVIparam(object = dvi_model,
                        fixed_param = fixed_param,
                        ga_param = ga_param)
 
 Heading date prediction
 
-Predict heading dates based on sowing dates and the DVI model with the 
+Predict heading dates based on sowing dates and the DVI model with the
 estimated parameters.
 
 fixed_param <- dviFixedParam()
@@ -73,18 +73,18 @@ date <- seq.Date(from = as.Date("2023-06-01"),
                  by = "day")
 day_len <- c(seq(12, 13.5, length.out = 30),
              seq(13.5, 12, length.out = length(date) - 30))
-temp = c(sample(x = 25:30, size = 30, replace = TRUE), 
+temp = c(sample(x = 25:30, size = 30, replace = TRUE),
          sample(x = 25:35, size = 31, replace = TRUE),
          sample(x = 30:35, size = 31, replace = TRUE))
 dvi_model <- buildDVImodel(date = date,
                            day_len = day_len,
                            temp = temp,
                            sowing = "2023-06-05",
-                           heading = "2023-08-20", 
+                           heading = "2023-08-20",
                            critical = 13,
                            acc = "test")
-                           
-dvi_est <- estDVIparam(object = dvi_model, 
+
+dvi_est <- estDVIparam(object = dvi_model,
                        fixed_param = fixed_param,
                        ga_param = ga_param)
 

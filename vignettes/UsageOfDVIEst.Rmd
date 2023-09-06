@@ -9,13 +9,13 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+    collapse = TRUE,
+    comment = "#>"
 )
 ```
 
 ```{r setup}
-library(DVIEst)
+# library(DVIEst)
 ```
 
 <br>
@@ -24,14 +24,28 @@ Load sample files.
 climate <- read.table(system.file("extdata/climate.txt",
                                   package = "DVIEst"), header = TRUE)
 dates <- read.table(system.file("extdata/dates.txt",
-                                  package = "DVIEst"), header = TRUE)
+                                package = "DVIEst"), header = TRUE)
+```
+
+The dates.txt file includes sowing and heading dates of eight varieties: IMY, 
+IR24, MSMKK, NKG, NKTP, PSH, SBPS, and STK.
+You can find the details of the varieties and datasets in our [publication]().
+Here, we subset the sowing and heading dates of the variety "NKTP". Further, 
+we divide the dataset into two subsets for 2-fold cross validation of DVI 
+modeling.
+```{r}
+set.seed(123)
+dates <- subset(dates, subset = Name == "NKTP")
+set1 <- sample(x = seq_len(nrow(dates)), size = as.integer(nrow(dates)/2))
+dates_set1 <- dates[set1, ]
+dates_set2 <- dates[-set1, ]
 ```
 
 <br>
 Create a GaParam object to specify parameters for a genetic algorithm to 
 estimate parameters of a DVI model.
 ```{r}
-ga_param <- gaParam(maxiter = 100, parallel = 1)
+ga_param <- gaParam(maxiter = 100, parallel = 10)
 ```
 <br>
 
@@ -46,8 +60,8 @@ Create a DviModel object as input for estDVIparam().
 dvi_model <- buildDVImodel(date = climate$Date, 
                            day_len = climate$DayLength,
                            temp = climate$Temp, 
-                           sowing = dates$Sowing[dates$Name == "NKTP"],
-                           heading = dates$Heading[dates$Name == "NKTP"], 
+                           sowing = dates_set1$Sowing,
+                           heading = dates_set1$Heading, 
                            critical = 12.75000,
                            acc = "NKTP")
 ```
@@ -61,22 +75,31 @@ summary(dvi_model)
 
 <br>
 Estimate parameters of a DVI model using a genetic algorithm.
-```{r eval = FALSE}
+```{r}
 # Do not run this code!
 # The parameter estimation using a genetic algorithm is a computational burden.
+set.seed(123)
 dvi_est <- estDVIparam(object = dvi_model, 
                        fixed_param = fixed_param, 
                        ga_param = ga_param)
 ```
+
 <br>
-For a demonstration, set arbitrary values as estimated parameters of the DVI 
-model.
+We can extract the estimated parameters from the DviEst object.
 ```{r}
+est_param <- getEstParam(object = dvi_est)
+est_param
+```
+
+<br>
+For a demonstration, set the estimated values obtained in the previous run of
+estDVIparam() in a package test using the codes shown above.
+```{r eval = FALSE}
 dvi_est <- setDviParam(object = dvi_model,
                        fixed_param = fixed_param,
-                       alpha = 5.497095, 
-                       beta = 7.1155689, 
-                       g = 86.4446010)
+                       alpha = 5.009977, 
+                       beta = 7.350367, 
+                       g = 86.112427)
 ```
 
 
@@ -102,11 +125,20 @@ print(p)
 ```
 
 <br>
-Extract the estimated parameters from the DviEst object.
+You can also predict heading dates of another dataset using the DVI model.
+Now we use the other subset prepared for 2-fold cross validation.
 ```{r}
-est_param <- getEstParam(object = dvi_est)
-est_param
+new_model <- buildDVImodel(date = climate$Date,
+                           day_len = climate$DayLength, 
+                           temp = climate$Temp,
+                           sowing = dates_set2$Sowing, 
+                           heading = dates_set2$Heading,
+                           verbose = FALSE)
+new_dvi_est <- predict(dvi_est, new_model = new_model)
+p <- plotDviEst(object = new_dvi_est)
+print(p)
 ```
+
 
 <br>
 Extract the prediction from the DviEst object.
@@ -124,6 +156,19 @@ cor_coef <- getCor(object = dvi_est)
 cor_coef
 ```
 
+Just to predict heading dates of samples using the DVI model.
+You can create a DviModel object without specifying heading dates.
+```{r}
+new_model <- buildDVImodel(date = climate$Date,
+                           day_len = climate$DayLength, 
+                           temp = climate$Temp,
+                           sowing = dates_set2$Sowing, 
+                           heading = NULL,
+                           verbose = FALSE)
+new_dvi_est <- predict(dvi_est, new_model = new_model)
+pred_df <- getPred(object = new_dvi_est)
+head(pred_df)
+```
 
 <br>
 <br>

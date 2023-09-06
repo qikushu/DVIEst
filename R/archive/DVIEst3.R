@@ -22,7 +22,7 @@ funcP <- function(pb, pc, po, p, beta, pCritical) {
         } else {
             output = 1
         }
-    # else
+        # else
     } else {
         # This study using critical daylength (photoperiod)
         if (pCritical < p) {
@@ -88,7 +88,7 @@ calcDVS <- function(fixedParams, alpha, beta, g, sowingDate, headingDate, climat
 
         DVSheading = DVSheading + DVR
         # for debug
-         #print(paste0("Date: ", date, " Temp: ", t, " DayLength: ", p, " DVR :", DVR, " DVSheading : ", DVSheading ))
+        #print(paste0("Date: ", date, " Temp: ", t, " DayLength: ", p, " DVR :", DVR, " DVSheading : ", DVSheading ))
     }
 
     errorHeading = 1 - DVSheading
@@ -251,7 +251,7 @@ estDVIparam = function(climateDf,headingDf, accessions, criticalDaylength, sowin
 
             RmseLossFunc = makeRmseLossFunc(alpha, beta, g, fixedParams=fixedParams, headingDf=headingDf2, climateDf=climateDf)
 
-            ga_result <- ga(type = "real-valued", fitness = function(x) -RmseLossFunc(x[1], x[2], x[3]), lower = c(0,0,30), upper = c(40, 40, 150), maxiter=maxiter, popSize=50, monitor=F, parallel=2)
+            ga_result <- ga(type = "real-valued", fitness = function(x) -RmseLossFunc(x[1], x[2], x[3]), lower = c(0,0,30), upper = c(40, 40, 150), maxiter=maxiter, popSize=50, monitor=F, parallel=10)
 
             # Result summary
             # summary(ga_result)
@@ -311,15 +311,17 @@ myAccessions = c("NKTP")
 # Fixed parameters
 myCriticalDaylength <- list(PSH=11.86667, NKG=11.90000, IMY=12.16667, NKTP=12.75000, MSMKK=13.08333, SBPS=13.33333, IR24=13.31667, STK=13.31667)
 
-
 ################
 #  Let's estimate
 ################
 #Use library GA
 library(GA)
 myMaxiter = 100
-estDVIparam(climateDf = myClimateDf, headingDf = myHeadingDf, accessions = myAccessions, criticalDaylength = myCriticalDaylength, sowingDateGroups = mySowingDateGroups, fixedParams = myFixedParams, maxiter = myMaxiter)
-
+set.seed(123)
+system.time({
+  estDVIparam(climateDf = myClimateDf, headingDf = myHeadingDf, accessions = myAccessions, criticalDaylength = myCriticalDaylength,
+              sowingDateGroups = mySowingDateGroups, fixedParams = myFixedParams, maxiter = myMaxiter)
+})
 
 ##################################################
 # Do not use below

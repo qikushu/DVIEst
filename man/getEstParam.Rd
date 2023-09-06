@@ -2,9 +2,7 @@
 % Please edit documentation in R/01_functions.R
 \name{getEstParam}
 \alias{getEstParam}
-\title{Get estimated parameters of a DVI model
-
-Extracted esetimted parameter values from the DviEst object.}
+\title{Get estimated parameters of a DVI model}
 \usage{
 getEstParam(object)
 }
@@ -15,7 +13,5 @@ getEstParam(object)
 a numeric vector of estimated alpha, beta, and g.
 }
 \description{
-Get estimated parameters of a DVI model
-
 Extracted esetimted parameter values from the DviEst object.
 }

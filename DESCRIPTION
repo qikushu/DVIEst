@@ -4,11 +4,17 @@ Version: 0.0.0.9000
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: Estimate the parameters of a DVI model based on fiven climate 
-    information, sowing and heading dates and predict the heading date based on the 
-    DVI model with the estimated parameters.
+Description: This package provides functions to perform development index (DVI) 
+    modeling, a.k.a developmental rate (DVR) model. DVI models are 
+    phenological models that simulate reproductive initiation and flowering of 
+    crops, especially rice. Parameters of a DVI model can be estimated based on
+    given climate information, sowing and heading dates of a variety. 
+    Prediction of heading dates is then achieved using the DVI model with
+    the estimated parameters and sowing dates.
 License: use_gpl3_license()
 Encoding: UTF-8
+azyData: true
+Imports: GA, ggplot2
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Suggests: 

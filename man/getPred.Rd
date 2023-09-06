@@ -2,10 +2,7 @@
 % Please edit documentation in R/01_functions.R
 \name{getPred}
 \alias{getPred}
-\title{Get predicted heading dates
-
-Extracted predicted heading dates and days-to-heading data
-from the DviEst object.}
+\title{Get predicted heading dates}
 \usage{
 getPred(object)
 }
@@ -16,8 +13,6 @@ getPred(object)
 a data.frame extracted from the prediction slot of the DviEst object.
 }
 \description{
-Get predicted heading dates
-
 Extracted predicted heading dates and days-to-heading data
 from the DviEst object.
 }

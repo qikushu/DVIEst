@@ -4,7 +4,16 @@
 \alias{buildDVImodel}
 \title{Create an input object}
 \usage{
-buildDVImodel(date, day_len, temp, sowing, heading, critical, acc)
+buildDVImodel(
+  date,
+  day_len,
+  temp,
+  sowing,
+  heading = NULL,
+  critical = NULL,
+  acc = "",
+  verbose = FALSE
+)
 }
 \arguments{
 \item{date}{a character vector to indicate the dates on which day lengths
@@ -26,6 +35,8 @@ and \code{day_len}.}
 \item{critical}{a numeric value to indicate the critical day length.}
 
 \item{acc}{a character indicates sample ID.}
+
+\item{verbose}{No message if FALSE.}
 }
 \value{
 A DviModel object that can be specified to the \code{model} argument of

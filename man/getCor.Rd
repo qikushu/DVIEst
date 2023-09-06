@@ -2,9 +2,7 @@
 % Please edit documentation in R/01_functions.R
 \name{getCor}
 \alias{getCor}
-\title{Get the correlation coefficient
-
-Extracted the correlation coefficient from the DviEst object.}
+\title{Get the correlation coefficient}
 \usage{
 getCor(object)
 }
@@ -15,7 +13,5 @@ getCor(object)
 a numeric value of the correlation coefficient.
 }
 \description{
-Get the correlation coefficient
-
 Extracted the correlation coefficient from the DviEst object.
 }

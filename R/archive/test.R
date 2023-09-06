@@ -47,17 +47,18 @@ myCriticalDaylength <- list(PSH=11.86667, NKG=11.90000, IMY=12.16667, NKTP=12.75
 #Use library GA
 library(GA)
 myMaxiter = 100
+myHeadingDf <-
 estDVIparam(climateDf = myClimateDf, headingDf = myHeadingDf, accessions = myAccessions, criticalDaylength = myCriticalDaylength, sowingDateGroups = mySowingDateGroups, fixedParams = myFixedParams, maxiter = myMaxiter)
-# NKTP   all 
+# NKTP   all
 # 3.415394 6.938856 96.63959 0.1177181
 # cor:  0.6001106
 
 source("R/01_functions.R")
 set.seed(123)
 heading <- na.omit(subset(myHeadingDf, subset = Name == "NKTP"))
-model <- buildDVImodel(climate = myClimateDf, 
+model <- buildDVImodel(climate = myClimateDf,
                        sowing = heading$Sowing,
-                       heading = heading$Heading, 
+                       heading = heading$Heading,
                        critical = myCriticalDaylength[["NKTP"]],
                        acc = "NKTP")
 out <- estDVIparam(object = model, ga_param = gaFixedParam(parallel = 2))
