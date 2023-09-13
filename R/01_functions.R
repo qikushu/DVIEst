@@ -751,10 +751,9 @@ predict.DviEst <- function(object, new_model = NULL) {
     }
 
     if (!is.null(object$model$critical)) {
-        fixed_param$critical <- object$model$critical
-
+        object$fixed_param$critical <- object$model$critical
     } else {
-        fixed_param$critical <- Inf
+        object$fixed_param$critical <- Inf
     }
 
     # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
