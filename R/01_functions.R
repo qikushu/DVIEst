@@ -750,6 +750,13 @@ predict.DviEst <- function(object, new_model = NULL) {
         model <- new_model
     }
 
+    if (!is.null(object$model$critical)) {
+        fixed_param$critical <- object$model$critical
+
+    } else {
+        fixed_param$critical <- Inf
+    }
+
     # Original >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     # predictedDates <- vector("numeric", nrow(headingDf2))
     # for (i in 1:nrow(headingDf2)) {
@@ -1118,7 +1125,7 @@ setDviParam <- function(object, fixed_param, alpha, beta, g){
                           "Estimated Beta",
                           "Estimated G")
     if(is.null(object$fixed_param$critical)){
-        fixed_param$critical <- NULL
+        fixed_param$critical <- critical
 
     } else {
         fixed_param$critical <- object$fixed_param$critical
