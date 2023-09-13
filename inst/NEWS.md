@@ -1,4 +1,4 @@
-Changes in version 0.99.2 (2023-9-14)
+Changes in version 0.99.3 (2023-9-14)
 + Change the formula for the linear model to represent the relationship between
 + observed and predicted heading dates. 
 + Fix a bug in setDviParam() in which the old code had set the value of critical 
