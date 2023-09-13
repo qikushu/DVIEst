@@ -1,6 +1,6 @@
 Package: DVIEst
 Title: DVI model parameter estimation and heading date prediction
-Version: 0.99.1
+Version: 0.99.2
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))

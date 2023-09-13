@@ -813,7 +813,7 @@ predict.DviEst <- function(object, new_model = NULL) {
 
     } else {
         object$correlation <- cor(dth_obs, dth_pred, use = "complete.obs")
-        object$lm <- lm(formula = dth_pred ~ dth_obs - 1)
+        object$lm <- lm(formula = dth_pred ~ dth_obs)
     }
 
     class(object) <- c(class(object), "DviEst")
