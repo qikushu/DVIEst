@@ -1124,7 +1124,7 @@ setDviParam <- function(object, fixed_param, alpha, beta, g){
                           "Estimated Beta",
                           "Estimated G")
     if(is.null(object$fixed_param$critical)){
-        fixed_param$critical <- critical
+        fixed_param$critical <- NULL
 
     } else {
         fixed_param$critical <- object$fixed_param$critical
