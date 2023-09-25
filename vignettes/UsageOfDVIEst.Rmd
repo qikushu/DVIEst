@@ -127,7 +127,7 @@ print(p)
 <br>
 You can also predict heading dates of another dataset using the DVI model.
 Now we use the other subset prepared for 2-fold cross validation.
-```{r}
+```{r fig.width=5, fig.height=5}
 new_model <- buildDVImodel(date = climate$Date,
                            day_len = climate$DayLength, 
                            temp = climate$Temp,
